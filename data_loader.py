@@ -53,6 +53,11 @@ def load_data(load_path, solar_path, market_path):
     solar_resampled = solar_resampled.tz_convert(None)
     market_resampled = market_resampled.tz_convert(None)
 
+
+    load_resampled.to_csv("processed_load.csv")
+    solar_resampled.to_csv("processed_solar.csv")
+    market_resampled.to_csv("processed_market.csv")
+
     return load_resampled, solar_resampled, market_resampled
 
 
