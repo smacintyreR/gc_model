@@ -5,7 +5,7 @@ from results import generate_results
 
 def main():
     # Load input data
-    load, solar, market = load_data("load_data.csv", "solar_data.csv", "market_data.csv")
+    load, solar, market = load_data("data/load_data.csv", "data/solar_data.csv", "data/market_data.csv")
 
     # Set up PyPSA network
     network = setup_network(load, solar, market)
