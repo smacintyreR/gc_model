@@ -8,57 +8,47 @@ def load_data(load_path, solar_path, market_path):
     solar = pd.read_csv(solar_path, parse_dates=["Datetime"], index_col="Datetime")
     market = pd.read_csv(market_path, parse_dates=["Datetime"], index_col="Datetime")
 
-    # Load data: Assume it's in 'Australia/Melbourne' but naive
-    if load.index.tzinfo is None:
-        load = load.tz_localize("Australia/Melbourne", ambiguous="NaT", nonexistent="shift_forward")
-    else:
-        load = load.tz_convert("Australia/Melbourne")
-
-    # Solar data: Already timezone-aware (GMT+10), convert to 'Australia/Melbourne'
-    solar = solar.tz_convert("Australia/Melbourne")
-
-    # Market data: Naive but should be GMT+10 → Convert to 'Australia/Melbourne'
-    if market.index.tzinfo is None:
-        market = market.tz_localize("Etc/GMT-10").tz_convert("Australia/Melbourne")
-    else:
-        market = market.tz_convert("Australia/Melbourne")
-
-    # Convert wholesale prices from $/MWh to $/kWh
     market["ImportWholesalePrice"] /= 1000
     market["ExportWholesalePrice"] /= 1000
 
-    # Resample market data (5-minute → 30-minute intervals)
-    market_resampled = market.resample("30T").mean()
+    # Define 2024 30m index without feb 29
+    full_index = pd.date_range(start="2024-01-01 00:00:00", end="2024-12-31 23:30:00", freq="30T")
+    # Remove all timestamps where the date is February 29
+    clean_index = full_index[~((full_index.month == 2) & (full_index.day == 29))]
 
-    # Define full 2024 time range in 'Australia/Melbourne'
-    full_index = pd.date_range(start="2024-01-01", end="2024-12-31 23:30", freq="30T", tz="Australia/Melbourne")
+    # Treat load first
+    # Timezone is Australia/Melbourne
+    df_load = load.tz_localize("Australia/Melbourne", ambiguous=True)
 
-    # Resample solar and load data to 30-minute intervals
-    load_resampled = load.resample("30T").mean()
-    solar_resampled = solar.resample("30T").mean()
+    # Convert to GMT+10 timezone
+    df_load = df_load.tz_convert('Etc/GMT-10')
 
-    # Reindex all datasets to ensure full 2024 coverage
-    load_resampled = load_resampled.reindex(full_index, method="ffill")
-    solar_resampled = solar_resampled.reindex(full_index, method="ffill")
-    market_resampled = market_resampled.reindex(full_index, method="ffill")
+    # Shift first 2 entries
+    df_load_reordered = pd.concat([df_load.iloc[2:], df_load.iloc[:2]])
 
-    # Handle leap year by copying February 29 values from February 28
-    feb_29_index = pd.date_range("2024-02-29", periods=1, freq="30T", tz="Australia/Melbourne")
-    load_resampled.loc[feb_29_index] = load_resampled.loc["2024-02-28"]
-    solar_resampled.loc[feb_29_index] = solar_resampled.loc["2024-02-28"]
-    market_resampled.loc[feb_29_index] = market_resampled.loc["2024-02-28"]
-
-    # Convert all timestamps to naive (remove timezone)
-    load_resampled = load_resampled.tz_convert(None)
-    solar_resampled = solar_resampled.tz_convert(None)
-    market_resampled = market_resampled.tz_convert(None)
+    # Set index to 2024 index
+    df_load_reordered.index = clean_index
 
 
-    load_resampled.to_csv("processed_load.csv")
-    solar_resampled.to_csv("processed_solar.csv")
-    market_resampled.to_csv("processed_market.csv")
+    # Treat market data
+    df_market_resampled = market.resample('30min').mean()
 
-    return load_resampled, solar_resampled, market_resampled
+    # Remove february 29
+    df_market_resampled = df_market_resampled[~((df_market_resampled.index.month == 2) & (df_market_resampled.index.day == 29))]
+
+    # Treat solar data
+    solar.index = clean_index
+
+
+
+
+
+
+    df_load_reordered.to_csv("processed_load.csv")
+    solar.to_csv("processed_solar.csv")
+    df_market_resampled.to_csv("processed_market.csv")
+
+    return df_load_reordered, solar, df_market_resampled
 
 
 

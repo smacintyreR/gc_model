@@ -23,10 +23,24 @@ def setup_network(load, solar, market):
 
     # Add solar
     network.add("Generator", "solar_PV", bus="office",
-                p_max_pu=solar["Generation"], carrier="solar", p_nom=1)
+                p_set=solar["Generation"], carrier="solar")
 
     # Add battery
-    network.add("Store", "battery", bus="office", e_nom=500, p_nom=250, e_cyclic=True)
+    energy_capacity_kwh = 500
+    power_capacity_kw = 250
+
+    # Add storage unit (state of charge)
+    n.add("StorageUnit",
+        name="battery",
+        bus="office",
+        p_set=0.0,
+        p_nom=power_capacity_kw,
+        max_hours=energy_capacity_kwh / power_capacity_kw,
+        efficiency_store=0.95,
+        efficiency_dispatch=0.95,
+        cyclic_state_of_charge=False,
+        capital_cost=0.0,  # optional if not modeling economics yet
+    )
 
     # Add grid connection
     network.add("Link", "grid_import", bus0="grid", bus1="office",  # FIX: Ensure correct bus names
@@ -34,5 +48,7 @@ def setup_network(load, solar, market):
 
     network.add("Link", "grid_export", bus0="office", bus1="grid",
                 p_nom_extendable=True, marginal_cost=-market["ExportWholesalePrice"])
+    
+    print(network)
 
     return network
