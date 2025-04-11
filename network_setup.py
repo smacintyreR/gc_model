@@ -1,54 +1,44 @@
-import pypsa
+import linopy
+import pandas as pd
+import numpy as np
 
-def setup_network(load, solar, market):
-    """Sets up the PyPSA network with grid, solar, and battery components."""
-    network = pypsa.Network()
+def setup_linopy_network(timestamps, battery_capacity_kwh=500, battery_power_kw=250, battery_efficiency=0.95):
+    dt_hours = 0.5
+    model = linopy.Model()
 
-    # Ensure market data is aligned with load index
-    market = market.reindex(load.index, method="ffill")
+    # Time indices
+    T = pd.Index(timestamps, name="t")
+    months = timestamps.to_series().dt.month.unique()
+    M = pd.Index(months, name="m")
 
-    # Check for duplicate timestamps
-    if not load.index.is_monotonic_increasing:
-        load = load.sort_index()
+    # Time-based masks and mappings
+    is_weekday = timestamps.to_series().dt.weekday < 5
+    month_map = timestamps.to_series().dt.month
 
-    # Add time steps
-    network.set_snapshots(load.index)
+    # === Variables ===
+    import_grid = model.add_variables(lower=0, name="import_grid", coords=[T])
+    export_grid = model.add_variables(lower=0, name="export_grid", coords=[T])
+    charge = model.add_variables(lower=0, upper=battery_power_kw * dt_hours, name="charge", coords=[T])
+    discharge = model.add_variables(lower=0, upper=battery_power_kw * dt_hours, name="discharge", coords=[T])
+    soc = model.add_variables(lower=0, upper=battery_capacity_kwh, name="soc", coords=[T])
+    peak_wd = model.add_variables(lower=0, name="peak_import_weekday", coords=[M])
+    peak_we = model.add_variables(lower=0, name="peak_import_weekend", coords=[M])
 
-    # Add buses
-    network.add("Bus", "office")
-    network.add("Bus", "grid")  # FIX: Define 'grid' bus
+    # === Package variables for reuse ===
+    variables = {
+        "import_grid": import_grid,
+        "export_grid": export_grid,
+        "charge": charge,
+        "discharge": discharge,
+        "soc": soc,
+        "peak_wd": peak_wd,
+        "peak_we": peak_we,
+        "T": T,
+        "M": M,
+        "is_weekday": is_weekday,
+        "month_map": month_map,
+        "battery_efficiency": battery_efficiency,
+        "dt_hours": dt_hours
+    }
 
-    # Add load
-    network.add("Load", "building_load", bus="office", p_set=load["ImportkWh"])
-
-    # Add solar
-    network.add("Generator", "solar_PV", bus="office",
-                p_set=solar["Generation"], carrier="solar")
-
-    # Add battery
-    energy_capacity_kwh = 500
-    power_capacity_kw = 250
-
-    # Add storage unit (state of charge)
-    n.add("StorageUnit",
-        name="battery",
-        bus="office",
-        p_set=0.0,
-        p_nom=power_capacity_kw,
-        max_hours=energy_capacity_kwh / power_capacity_kw,
-        efficiency_store=0.95,
-        efficiency_dispatch=0.95,
-        cyclic_state_of_charge=False,
-        capital_cost=0.0,  # optional if not modeling economics yet
-    )
-
-    # Add grid connection
-    network.add("Link", "grid_import", bus0="grid", bus1="office",  # FIX: Ensure correct bus names
-                p_nom_extendable=True, marginal_cost=market["ImportWholesalePrice"])
-
-    network.add("Link", "grid_export", bus0="office", bus1="grid",
-                p_nom_extendable=True, marginal_cost=-market["ExportWholesalePrice"])
-    
-    print(network)
-
-    return network
+    return model, variables

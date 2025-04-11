@@ -1,20 +1,24 @@
 from data_loader import load_data
-from network_setup import setup_network
-from optimizer import optimize_battery
-from results import generate_results
+from optimizer import build_linopy_model
+from network_setup import setup_linopy_network
+from results import plot_results
 
 def main():
     # Load input data
     load, solar, market = load_data("data/load_data.csv", "data/solar_data.csv", "data/market_data.csv")
 
     # Set up PyPSA network
-    network = setup_network(load, solar, market)
 
     # Optimize battery storage
-    optimize_battery(network)
+    results,  model = build_linopy_model(load=load,solar=solar,import_price=market['ImportWholesalePrice'],
+                     export_price=market['ExportWholesalePrice'], timestamps=load.index)
 
     # Generate results & analysis
-    generate_results(network)
+    timestamps = model.variables.coords["t"]
+
+# Save plots
+    plot_results(results, timestamps, load, solar)
+
 
 if __name__ == "__main__":
     main()

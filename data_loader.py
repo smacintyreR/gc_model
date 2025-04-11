@@ -48,6 +48,11 @@ def load_data(load_path, solar_path, market_path):
     solar.to_csv("processed_solar.csv")
     df_market_resampled.to_csv("processed_market.csv")
 
+    # Take first 5 timesteps
+    df_load_reordered = df_load_reordered[:200]
+    solar = solar[:200]
+    df_market_resampled = df_market_resampled[:200]
+
     return df_load_reordered, solar, df_market_resampled
 
 
