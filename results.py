@@ -109,3 +109,52 @@ def plot_results(results, timestamps, load, solar, output_dir="plots"):
     plt.savefig(f"{output_dir}/charge_discharge.png")
     plt.close()
 
+
+
+def summarize_returns(results, import_price, export_price, timestamps, output_dir="plots"):
+    """
+    Summarize monthly returns from import, export, and net revenue.
+    
+    Parameters:
+        results (xr.Dataset): xarray Dataset with ['import_grid', 'export_grid']
+        import_price (pd.Series): Import price (indexed by timestamp)
+        export_price (pd.Series): Export price (indexed by timestamp)
+        timestamps (pd.Index): DatetimeIndex
+        output_dir (str): Folder to save CSV or plots
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Convert to Series and align
+    import_grid = results.import_grid.to_series().reindex(timestamps).astype(float)
+    export_grid = results.export_grid.to_series().reindex(timestamps).astype(float)
+    import_price = import_price.reindex(timestamps).astype(float)
+    export_price = export_price.reindex(timestamps).astype(float)
+
+    # Compute cost/revenue per timestep
+    import_cost = import_grid * import_price
+    export_revenue = export_grid * export_price
+    net_revenue = export_revenue - import_cost
+
+    # Group by month
+    df = pd.DataFrame({
+        "import_cost": import_cost,
+        "export_revenue": export_revenue,
+        "net_revenue": net_revenue
+    })
+    df["month"] = timestamps.to_series().dt.to_period("M").values
+
+    monthly_summary = df.groupby("month").sum()
+
+    # Save to CSV
+    monthly_summary.to_csv(os.path.join(output_dir, "monthly_returns.csv"))
+
+    # Plot
+    monthly_summary.plot(kind="bar", stacked=True, figsize=(12, 6), color=["crimson", "seagreen", "grey"])
+    plt.title("Monthly Economic Returns")
+    plt.ylabel("AUD")
+    plt.xlabel("Month")
+    plt.grid(True, axis="y")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "monthly_returns.png"))
+    plt.close()
+

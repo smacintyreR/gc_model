@@ -62,17 +62,17 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
 
 
 
+    print(import_price)
 
     # === Objective function ===
     objective = (
-        (import_grid * import_price).sum()
-        - (export_grid * export_price).sum()
+    (import_grid * (import_price.to_numpy())).sum() - (export_grid*(export_price.to_numpy())).sum()
     )
 
     model.add_objective(objective, sense="min")
 
-    print(model)
     print(model.objective)
+
 
     model.solve(solver_name="highs")
 
