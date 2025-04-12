@@ -39,6 +39,39 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
         )
 
 
+    january_mask = T.month == 1
+
+    print(january_mask)
+
+# Apply to variable
+    for m in M:
+        month_mask = T.month == m
+        mask_month_weekday = month_mask & is_weekday
+        mask_month_weekend = month_mask & ~is_weekday
+        import_month_weekday = import_grid[mask_month_weekday]
+        import_month_weekend = import_grid[mask_month_weekend]
+
+        time_index_weekday = import_month_weekday.coords["t"].values
+        time_index_weekend = import_month_weekend.coords["t"].values
+
+        #print(time_index)
+        for t in time_index_weekday:
+                    model.add_constraints(
+            peak_wd[t] - import_month_weekday[t] > 0,
+            name=f"max_power_weekday_{t}_month_{m}"
+            )
+                    
+        for t in time_index_weekend:
+                    model.add_constraints(
+            peak_we[t] - import_month_weekend[t] > 0,
+            name=f"max_power_weekday_{t}_month_{m}"
+            )
+            
+
+
+    #print(import_january['2024-01-01 00:00:00'])
+
+
     # Power balance constraint
 
 
