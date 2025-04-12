@@ -46,8 +46,9 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
 # Apply to variable
     for m in M:
         month_mask = T.month == m
-        mask_month_weekday = month_mask & is_weekday
-        mask_month_weekend = month_mask & ~is_weekday
+        mask_month_weekday = (month_mask & is_weekday).to_numpy()
+        mask_month_weekend = (month_mask & ~is_weekday).to_numpy()
+        print((month_mask & ~is_weekday).to_numpy())
         import_month_weekday = import_grid[mask_month_weekday]
         import_month_weekend = import_grid[mask_month_weekend]
 
@@ -57,14 +58,14 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
         #print(time_index)
         for t in time_index_weekday:
                     model.add_constraints(
-            peak_wd[t] - import_month_weekday[t] > 0,
+            peak_wd[m] - import_month_weekday[t] >= 0,
             name=f"max_power_weekday_{t}_month_{m}"
             )
                     
         for t in time_index_weekend:
                     model.add_constraints(
-            peak_we[t] - import_month_weekend[t] > 0,
-            name=f"max_power_weekday_{t}_month_{m}"
+            peak_we[m] - import_month_weekend[t] >= 0,
+            name=f"max_power_weekend_{t}_month_{m}"
             )
             
 
@@ -99,7 +100,7 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
 
     # === Objective function ===
     objective = (
-    (import_grid * (import_price.to_numpy())).sum() - (export_grid*(export_price.to_numpy())).sum()
+    (import_grid * (import_price.to_numpy())).sum() - (export_grid*(export_price.to_numpy())).sum() + 3*peak_we.sum() + 12*peak_wd.sum()
     )
 
     model.add_objective(objective, sense="min")
