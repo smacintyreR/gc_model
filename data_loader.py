@@ -48,7 +48,7 @@ def load_data(load_path, solar_path, market_path):
     df_market_resampled.to_csv("processed_market.csv")
 
     # FOR TESTING PURPOSES
-    reduced_n=1000
+    reduced_n=336
     # Take first n timesteps for reduced runtime 
     df_load_reordered = df_load_reordered[:reduced_n]
     solar = solar[:reduced_n]

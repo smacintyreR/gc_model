@@ -31,9 +31,8 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     load = load.reindex(timestamps).astype(float)
     solar = solar.reindex(timestamps).astype(float)
     net_load = load['ImportkWh'] - solar["Generation"]
-    print(net_load)
 
-    # === Plot State of Charge ===
+    # Plot State of Charge
     plt.figure(figsize=(14, 4))
     soc.plot(label="State of Charge (kWh)", color="darkorange")
     plt.title("Battery State of Charge")
@@ -58,12 +57,12 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     plt.savefig(f"{output_dir}/import_export.png")
     plt.close()
 
-    # === Plot Net Grid Flow ===
+    # Plot Net Grid Flow
     plt.figure(figsize=(14, 4))
     net_flow.plot(label="Net Grid Flow (+ve = import, -ve = export)", color="purple")
     plt.axhline(0, color="black", linestyle="--")
     plt.title("Net Grid Flow")
-    plt.ylabel("kWh per timestep")
+    plt.ylabel("kWh")
     plt.xlabel("Time")
     plt.grid(True)
     plt.legend()
@@ -71,7 +70,7 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     plt.savefig(f"{output_dir}/net_grid_flow.png")
     plt.close()
 
-    # === Plot Load and Solar Production ===
+    # Plot Load and Solar Production
     plt.figure(figsize=(14, 4))
     plt.plot(timestamps, load, label="Load (kWh)", color="red")
     plt.plot(timestamps, solar, label="Solar Production (kWh)", color="gold")
@@ -84,12 +83,12 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     plt.savefig(f"{output_dir}/load_solar.png")
     plt.close()
 
-    # === Plot Net Load (Load - Solar) ===
+    # Plot Net Load (Load - Solar)
     plt.figure(figsize=(14, 4))
     plt.plot(net_load.index, net_load, label="Net Load (Load - Solar)", color="brown")
     plt.axhline(0, color="black", linestyle="--")
     plt.title("Net Load")
-    plt.ylabel("kWh per timestep")
+    plt.ylabel("kWh")
     plt.xlabel("Time")
     plt.grid(True)
     plt.legend()
@@ -97,12 +96,12 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     plt.savefig(f"{output_dir}/net_load.png")
     plt.close()
 
-    # === Plot Battery Charge and Discharge ===
+    # Plot Battery Charge and Discharge
     plt.figure(figsize=(14, 4))
     charge.plot(label="Battery Charge (kWh)", color="green")
     discharge.plot(label="Battery Discharge (kWh)", color="orange")
     plt.title("Battery Charge and Discharge")
-    plt.ylabel("kWh per timestep")
+    plt.ylabel("kWh")
     plt.xlabel("Time")
     plt.grid(True)
     plt.legend()
@@ -162,7 +161,8 @@ def summarize_returns(results, import_price, export_price, timestamps, output_di
 
 
 
-def cost_comparison(results, timestamps, load,import_price, export_price, solar, output_dir="results"):
+def cost_comparison(results, timestamps, load,import_price, export_price, solar, weekday_tariff=12,
+                    weekend_tariff=3, output_dir="results"):
     """
     Perform cost comparison calculations based for battery + solar case vs no battery/solar.
     Produces monthly cost saving csv summary.
@@ -190,12 +190,7 @@ def cost_comparison(results, timestamps, load,import_price, export_price, solar,
     is_weekday = timestamps.to_series().dt.weekday < 5
     months = timestamps.to_series().dt.month
 
-    print(import_grid)
-    print(import_price)
-    print(load)
-    print(solar)
-
-        # === Cost Comparison Analysis ===
+    # Cost Comparison Analysis
     df = pd.DataFrame({
         "import_grid": import_grid,
         "import_price": import_price,
@@ -207,22 +202,22 @@ def cost_comparison(results, timestamps, load,import_price, export_price, solar,
 
     # With battery and solar
     df["cost_with_battery"] = df["import_grid"] * df["import_price"]
-    peak_wd = df[df["is_weekday"]].groupby("month")["import_grid"].max() * 12
-    peak_we = df[~df["is_weekday"]].groupby("month")["import_grid"].max() * 3
+    peak_wd = df[df["is_weekday"]].groupby("month")["import_grid"].max() * weekday_tariff
+    peak_we = df[~df["is_weekday"]].groupby("month")["import_grid"].max() * weekend_tariff
     cost_with_battery = df.groupby("month")["cost_with_battery"].sum() + peak_wd + peak_we
 
     # Without battery and solar (just load)
     df["import_no_solar"] = df["load"]
-    df["cost_no_solar"] = df["import_no_solar"] * df["import_price"]
-    peak_wd_nosolar = df[df["is_weekday"]].groupby("month")["import_no_solar"].max() * 12
-    peak_we_nosolar = df[~df["is_weekday"]].groupby("month")["import_no_solar"].max() * 3
-    cost_no_solar = df.groupby("month")["cost_no_solar"].sum() + peak_wd_nosolar + peak_we_nosolar
+    df["cost_no_solar_no_battery"] = df["import_no_solar"] * df["import_price"]
+    peak_wd_nosolar = df[df["is_weekday"]].groupby("month")["import_no_solar"].max() * weekday_tariff
+    peak_we_nosolar = df[~df["is_weekday"]].groupby("month")["import_no_solar"].max() * weekend_tariff
+    cost_no_solar_no_battery = df.groupby("month")["cost_no_solar_no_battery"].sum() + peak_wd_nosolar + peak_we_nosolar
 
     # Monthly savings
-    monthly_savings = cost_no_solar - cost_with_battery
+    monthly_savings = cost_no_solar_no_battery - cost_with_battery
     summary = pd.DataFrame({
         "cost_with_battery": cost_with_battery,
-        "cost_no_solar": cost_no_solar,
+        "cost_no_solar": cost_no_solar_no_battery,
         "monthly_savings": monthly_savings
     })
 

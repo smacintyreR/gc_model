@@ -38,10 +38,9 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
         t0 = T[T.get_loc(t1) - 1]  # Get the previous time step
 
         model.add_constraints(
-            (soc[t1] - soc[t0]) + eta * charge[t0] - discharge[t0] / eta == 0,
+            (soc[t1] - soc[t0]) - (eta * charge[t0] - discharge[t0] / eta) == 0,
             name=f"soc_balance_{t1}"
         )
-
 
     # Monthly peak power weekend and weekday related constraints
     for m in M:
@@ -88,8 +87,10 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
             name=f"export_constraint_{t}"
         )
 
-        # Ensures battery discharge cannot discharge more than battery capacity
-        model.add_constraints(discharge[t] - eta*soc[t] <= 0, name=f"discharge_limit_{t}")
+        model.add_constraints(
+               discharge[t] - soc[t] <= 0,
+               name=f"discharge_constraint_{t}"
+        )
 
         # Define max power charge/discharge in 30m timestep
         M_power = battery_power_kw * eta * vars["dt_hours"]
@@ -105,7 +106,7 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
 
     # Define objective function
     objective = (
-    (import_grid * (import_price.to_numpy())).sum() - (export_grid*(export_price.to_numpy())).sum() + 3*peak_we.sum() + 12*peak_wd.sum()
+    (import_grid * (import_price.to_numpy())).sum() - (export_grid*(export_price.to_numpy())).sum() + weekend_tariff*peak_we.sum() + weekday_tariff*peak_wd.sum()
     )
 
     # Add objective to model
