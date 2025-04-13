@@ -22,6 +22,8 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
     eta = vars["battery_efficiency"]
     peak_wd = vars["peak_wd"]
     peak_we = vars["peak_we"]
+    is_charging = vars["is_charging"]
+    is_discharging = vars["is_discharging"]
 
     # === Constraints ===
 
@@ -79,8 +81,6 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
 
     for t in T:
 
-        #print(solar.loc[t][0])
-        #print(load.loc[t][0])
         model.add_constraints(
         (import_grid[t] - export_grid[t]) + (discharge[t] - charge[t]) == (load.loc[t][0] - solar.loc[t][0]),
             name=f"power_balance_{t}"
@@ -93,6 +93,13 @@ def build_linopy_model(load, solar, import_price, export_price, timestamps, batt
         )
 
         model.add_constraints(discharge[t] - soc[t] <= 0, name=f"discharge_limit_{t}")
+
+        M_power = battery_power_kw * eta * vars["dt_hours"]
+
+
+        model.add_constraints(charge[t] - M_power * is_charging[t] <= 0, name=f"charge_binary_link_{t}")
+        model.add_constraints(discharge[t] - M_power * is_discharging[t] <= 0, name=f"discharge_binary_link_{t}")
+        model.add_constraints(is_charging[t] + is_discharging[t] <= 1, name=f"no_simultaneous_{t}")
 
 
 

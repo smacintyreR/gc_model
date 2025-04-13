@@ -1,7 +1,7 @@
 from data_loader import load_data
 from optimizer import build_linopy_model
 from network_setup import setup_linopy_network
-from results import plot_results, summarize_returns
+from results import plot_results, summarize_returns, cost_comparison
 
 def main():
     # Load input data
@@ -20,6 +20,8 @@ def main():
     plot_results(results, timestamps, load, solar)
 
     summarize_returns(results, market['ImportWholesalePrice'], market['ExportWholesalePrice'], timestamps)
+
+    cost_comparison(results, timestamps, load, solar)
 
 
 if __name__ == "__main__":

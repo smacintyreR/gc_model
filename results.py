@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
-def plot_results(results, timestamps, load, solar, output_dir="plots"):
+def plot_results(results, timestamps, load, solar, output_dir="results"):
     """
     Plot state of charge, import, export, solar, load, and net grid power over time.
     Save each plot as a PNG file.
@@ -157,4 +157,70 @@ def summarize_returns(results, import_price, export_price, timestamps, output_di
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "monthly_returns.png"))
     plt.close()
+
+
+
+
+def cost_comparison(results, timestamps, load, solar, output_dir="results"):
+    """
+    Perform cost comparison calculations based for battery + solar case vs no battery/solar.
+    Produces monthly cost saving csv summary.
+
+    Parameters:
+        results (xr.Dataset): xarray Dataset with data variables ['soc', 'import_grid', 'export_grid']
+        timestamps (pd.Index): Datetime index matching the model time steps
+        load (pd.Series): Load data indexed by time
+        solar (pd.Series): Solar production data indexed by time
+        output_dir (str): Directory to save PNG plots and results csvs
+    """
+    timestamps = pd.to_datetime(timestamps)
+    soc = results.soc.to_series().reindex(timestamps)
+    import_grid = results.import_grid.to_series().reindex(timestamps)
+    export_grid = results.export_grid.to_series().reindex(timestamps)
+    charge = results.charge.to_series().reindex(timestamps)
+    discharge = results.discharge.to_series().reindex(timestamps)
+    net_flow = import_grid - export_grid
+
+    load = load.reindex(timestamps).astype(float)
+    solar = solar.reindex(timestamps).astype(float)
+    import_price = import_price.reindex(timestamps).astype(float)
+    net_load = load - solar
+
+    is_weekday = timestamps.to_series().dt.weekday < 5
+    months = timestamps.to_series().dt.month
+
+
+        # === Cost Comparison Analysis ===
+    df = pd.DataFrame({
+        "import_grid": import_grid,
+        "import_price": import_price,
+        "load": load,
+        "solar": solar
+    })
+    df["month"] = df.index.month
+    df["is_weekday"] = df.index.weekday < 5
+
+    # With battery and solar
+    df["cost_with_battery"] = df["import_grid"] * df["import_price"]
+    peak_wd = df[df["is_weekday"]].groupby("month")["import_grid"].max() * 12
+    peak_we = df[~df["is_weekday"]].groupby("month")["import_grid"].max() * 3
+    cost_with_battery = df.groupby("month")["cost_with_battery"].sum() + peak_wd + peak_we
+
+    # Without battery and solar (just load)
+    df["import_no_solar"] = df["load"]
+    df["cost_no_solar"] = df["import_no_solar"] * df["import_price"]
+    peak_wd_nosolar = df[df["is_weekday"]].groupby("month")["import_no_solar"].max() * 12
+    peak_we_nosolar = df[~df["is_weekday"]].groupby("month")["import_no_solar"].max() * 3
+    cost_no_solar = df.groupby("month")["cost_no_solar"].sum() + peak_wd_nosolar + peak_we_nosolar
+
+    # Monthly savings
+    monthly_savings = cost_no_solar - cost_with_battery
+    summary = pd.DataFrame({
+        "cost_with_battery": cost_with_battery,
+        "cost_no_solar": cost_no_solar,
+        "monthly_savings": monthly_savings
+    })
+
+    # Save summary to CSV
+    summary.to_csv(f"{output_dir}/monthly_cost_summary.csv")
 

@@ -24,6 +24,10 @@ def setup_linopy_network(timestamps, battery_capacity_kwh=500, battery_power_kw=
     peak_wd = model.add_variables(lower=0, name="peak_import_weekday", coords=[M])
     peak_we = model.add_variables(lower=0, name="peak_import_weekend", coords=[M])
 
+    # Add binary variables
+    is_charging = model.add_variables(binary=True, name="is_charging", coords=[T])
+    is_discharging = model.add_variables(binary=True, name="is_discharging", coords=[T])
+
     # === Package variables for reuse ===
     variables = {
         "import_grid": import_grid,
@@ -38,7 +42,9 @@ def setup_linopy_network(timestamps, battery_capacity_kwh=500, battery_power_kw=
         "is_weekday": is_weekday,
         "month_map": month_map,
         "battery_efficiency": battery_efficiency,
-        "dt_hours": dt_hours
+        "dt_hours": dt_hours,
+        "is_charging": is_charging,
+        "is_discharging": is_discharging
     }
 
     return model, variables
