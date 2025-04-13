@@ -30,7 +30,8 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     # Reindex load and solar
     load = load.reindex(timestamps).astype(float)
     solar = solar.reindex(timestamps).astype(float)
-    net_load = load - solar
+    net_load = load['ImportkWh'] - solar["Generation"]
+    print(net_load)
 
     # === Plot State of Charge ===
     plt.figure(figsize=(14, 4))
@@ -85,7 +86,7 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
 
     # === Plot Net Load (Load - Solar) ===
     plt.figure(figsize=(14, 4))
-    net_load.plot(label="Net Load (Load - Solar)", color="brown")
+    plt.plot(net_load.index, net_load, label="Net Load (Load - Solar)", color="brown")
     plt.axhline(0, color="black", linestyle="--")
     plt.title("Net Load")
     plt.ylabel("kWh per timestep")
@@ -111,7 +112,7 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
 
 
 
-def summarize_returns(results, import_price, export_price, timestamps, output_dir="plots"):
+def summarize_returns(results, import_price, export_price, timestamps, output_dir="results"):
     """
     Summarize monthly returns from import, export, and net revenue.
     
@@ -161,7 +162,7 @@ def summarize_returns(results, import_price, export_price, timestamps, output_di
 
 
 
-def cost_comparison(results, timestamps, load, solar, output_dir="results"):
+def cost_comparison(results, timestamps, load,import_price, export_price, solar, output_dir="results"):
     """
     Perform cost comparison calculations based for battery + solar case vs no battery/solar.
     Produces monthly cost saving csv summary.
@@ -189,13 +190,17 @@ def cost_comparison(results, timestamps, load, solar, output_dir="results"):
     is_weekday = timestamps.to_series().dt.weekday < 5
     months = timestamps.to_series().dt.month
 
+    print(import_grid)
+    print(import_price)
+    print(load)
+    print(solar)
 
         # === Cost Comparison Analysis ===
     df = pd.DataFrame({
         "import_grid": import_grid,
         "import_price": import_price,
-        "load": load,
-        "solar": solar
+        "load": load["ImportkWh"],
+        "solar": solar["Generation"]
     })
     df["month"] = df.index.month
     df["is_weekday"] = df.index.weekday < 5
@@ -223,4 +228,17 @@ def cost_comparison(results, timestamps, load, solar, output_dir="results"):
 
     # Save summary to CSV
     summary.to_csv(f"{output_dir}/monthly_cost_summary.csv")
+
+
+    # Plot Monthly Cost Savings
+    plt.figure(figsize=(10, 5))
+    monthly_savings.plot(kind="bar", color="mediumseagreen")
+    plt.title("Monthly Cost Savings")
+    plt.ylabel("AUD")
+    plt.xlabel("Month")
+    plt.grid(True, axis="y")
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/monthly_savings.png")
+    plt.close()
+
 

@@ -3,7 +3,11 @@ import pandas as pd
 import numpy as np
 
 def setup_linopy_network(timestamps, battery_capacity_kwh=500, battery_power_kw=250, battery_efficiency=0.95):
+
+    # Define timestep length
     dt_hours = 0.5
+
+    # Initialise linopy model
     model = linopy.Model()
 
     # Time indices
@@ -15,7 +19,7 @@ def setup_linopy_network(timestamps, battery_capacity_kwh=500, battery_power_kw=
     is_weekday = timestamps.to_series().dt.weekday < 5
     month_map = timestamps.to_series().dt.month
 
-    # === Variables ===
+    # Variables definitions
     import_grid = model.add_variables(lower=0, name="import_grid", coords=[T])
     export_grid = model.add_variables(lower=0, name="export_grid", coords=[T])
     charge = model.add_variables(lower=0, upper=battery_power_kw * dt_hours, name="charge", coords=[T])
@@ -24,11 +28,11 @@ def setup_linopy_network(timestamps, battery_capacity_kwh=500, battery_power_kw=
     peak_wd = model.add_variables(lower=0, name="peak_import_weekday", coords=[M])
     peak_we = model.add_variables(lower=0, name="peak_import_weekend", coords=[M])
 
-    # Add binary variables
+    # Add binary variables - NOT IN USE
     is_charging = model.add_variables(binary=True, name="is_charging", coords=[T])
     is_discharging = model.add_variables(binary=True, name="is_discharging", coords=[T])
 
-    # === Package variables for reuse ===
+    # Save variables to dictionary
     variables = {
         "import_grid": import_grid,
         "export_grid": export_grid,
