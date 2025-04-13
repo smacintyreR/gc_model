@@ -1,0 +1,60 @@
+import pandas as pd
+
+def load_data(load_path, solar_path, market_path):
+    """Loads and processes input CSV files, aligning timestamps to 2024 with leap year handling."""
+
+    # Load datasets
+    load = pd.read_csv(load_path, parse_dates=["Datetime"], index_col="Datetime")
+    solar = pd.read_csv(solar_path, parse_dates=["Datetime"], index_col="Datetime")
+    market = pd.read_csv(market_path, parse_dates=["Datetime"], index_col="Datetime")
+
+    # Convert to AUD/kWh
+    market["ImportWholesalePrice"] /= 1000
+    market["ExportWholesalePrice"] /= 1000
+
+    # Define 2024 30m index without feb 29
+    full_index = pd.date_range(start="2024-01-01 00:00:00", end="2024-12-31 23:30:00", freq="30T")
+
+    # Remove all timestamps where the date is February 29
+    clean_index = full_index[~((full_index.month == 2) & (full_index.day == 29))]
+
+    # Load data
+    # Localise timezone to Australia/Melbourne
+    df_load = load.tz_localize("Australia/Melbourne", ambiguous=True)
+
+    # Convert to GMT+10 timezone
+    df_load = df_load.tz_convert('Etc/GMT-10')
+
+    # Shift first 2 entries to end of dataset
+    df_load_reordered = pd.concat([df_load.iloc[2:], df_load.iloc[:2]])
+
+    # Set index to 2024 index
+    df_load_reordered.index = clean_index
+
+    # Market data
+    # Resample 5m market at 30m mean
+    df_market_resampled = market.resample('30min').mean()
+
+    # Remove february 29
+    df_market_resampled = df_market_resampled[~((df_market_resampled.index.month == 2) & (df_market_resampled.index.day == 29))]
+
+    # Solar data
+    # Re-index to 2024 without February 29
+    solar.index = clean_index
+
+    # Save processed data for validation
+    df_load_reordered.to_csv("results/processed_load.csv")
+    solar.to_csv("results/processed_solar.csv")
+    df_market_resampled.to_csv("result/processed_market.csv")
+
+    # FOR TESTING PURPOSES
+    reduced_n=336
+    # Take first n timesteps for reduced runtime 
+    df_load_reordered = df_load_reordered[:reduced_n]
+    solar = solar[:reduced_n]
+    df_market_resampled = df_market_resampled[:reduced_n]
+
+    return df_load_reordered, solar, df_market_resampled
+
+
+
