@@ -25,7 +25,7 @@ def main():
     cost_comparison(results, timestamps, load,market['ImportWholesalePrice'], market['ExportWholesalePrice'],  solar)
 
     # Perform some common sense model validation
-    validate_model(results, timestamps, load, solar)
+    validate_model(results, timestamps)
 
 
 if __name__ == "__main__":

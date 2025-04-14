@@ -185,29 +185,29 @@ def cost_comparison(results, timestamps, load,import_price, export_price, solar,
     load = load.reindex(timestamps).astype(float)
     solar = solar.reindex(timestamps).astype(float)
     import_price = import_price.reindex(timestamps).astype(float)
-    net_load = load - solar
-
-    is_weekday = timestamps.to_series().dt.weekday < 5
-    months = timestamps.to_series().dt.month
+    export_price = import_price.reindex(timestamps).astype(float)
 
     # Cost Comparison Analysis
     df = pd.DataFrame({
         "import_grid": import_grid,
         "import_price": import_price,
         "load": load["ImportkWh"],
-        "solar": solar["Generation"]
+        "solar": solar["Generation"],
+        "export_price": export_price,
+        "export_grid": export_grid
     })
     df["month"] = df.index.month
     df["is_weekday"] = df.index.weekday < 5
 
     # With battery and solar
-    df["cost_with_battery"] = df["import_grid"] * df["import_price"]
+    df["cost_with_battery"] = df["import_grid"] * df["import_price"] - df["export_grid"] * df["export_price"]
     peak_wd = df[df["is_weekday"]].groupby("month")["import_grid"].max() * weekday_tariff
     peak_we = df[~df["is_weekday"]].groupby("month")["import_grid"].max() * weekend_tariff
     cost_with_battery = df.groupby("month")["cost_with_battery"].sum() + peak_wd + peak_we
 
     # Without battery and solar (just load)
     df["import_no_solar"] = df["load"]
+    print(df["load"].sum())
     df["cost_no_solar_no_battery"] = df["import_no_solar"] * df["import_price"]
     peak_wd_nosolar = df[df["is_weekday"]].groupby("month")["import_no_solar"].max() * weekday_tariff
     peak_we_nosolar = df[~df["is_weekday"]].groupby("month")["import_no_solar"].max() * weekend_tariff

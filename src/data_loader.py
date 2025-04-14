@@ -45,14 +45,14 @@ def load_data(load_path, solar_path, market_path):
     # Save processed data for validation
     df_load_reordered.to_csv("results/processed_load.csv")
     solar.to_csv("results/processed_solar.csv")
-    df_market_resampled.to_csv("result/processed_market.csv")
+    df_market_resampled.to_csv("results/processed_market.csv")
 
     # FOR TESTING PURPOSES
-    reduced_n=336
-    # Take first n timesteps for reduced runtime 
-    df_load_reordered = df_load_reordered[:reduced_n]
-    solar = solar[:reduced_n]
-    df_market_resampled = df_market_resampled[:reduced_n]
+    # reduced_n=3000
+    # # Take first n timesteps for reduced runtime 
+    # df_load_reordered = df_load_reordered[:reduced_n]
+    # solar = solar[:reduced_n]
+    # df_market_resampled = df_market_resampled[:reduced_n]
 
     return df_load_reordered, solar, df_market_resampled
 
