@@ -109,6 +109,16 @@ def plot_results(results, timestamps, load, solar, output_dir="results"):
     plt.savefig(f"{output_dir}/charge_discharge.png")
     plt.close()
 
+    # Save Battery Operation Data to CSV
+    battery_df = pd.DataFrame({
+        "timestamp": timestamps,
+        "state_of_charge_kWh": soc,
+        "charge_kWh": charge,
+        "discharge_kWh": discharge
+    }).set_index("timestamp")
+
+    battery_df.to_csv(f"{output_dir}/battery_operation_timeseries.csv")
+
 
 
 def summarize_returns(results, import_price, export_price, timestamps, output_dir="results"):
@@ -207,7 +217,6 @@ def cost_comparison(results, timestamps, load,import_price, export_price, solar,
 
     # Without battery and solar (just load)
     df["import_no_solar"] = df["load"]
-    print(df["load"].sum())
     df["cost_no_solar_no_battery"] = df["import_no_solar"] * df["import_price"]
     peak_wd_nosolar = df[df["is_weekday"]].groupby("month")["import_no_solar"].max() * weekday_tariff
     peak_we_nosolar = df[~df["is_weekday"]].groupby("month")["import_no_solar"].max() * weekend_tariff
