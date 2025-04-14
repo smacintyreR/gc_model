@@ -2,31 +2,70 @@
 
 ## Problem context
 
-- Customer in VIC, Australia considering intalling 250 kW/500 kWh battery and solar panel to reduce energy costs on an office building
-- Peak power charges apply, $12/kW on weekdays, 3$7kW on weekends. Power calculated by averaging half-hourly energy import values.
-- We will assume equal charge and discharge efficiency of $\eta = 0.95$
+- Customer in **VIC, Australia** considering intalling *250 kW/500 kWh battery and solar panel* to reduce energy costs on an office building
+- Peak power charges apply, $12/kW on **weekdays**, 3$/kW on **weekends**. Power calculated by averaging half-hourly energy import values.
+- We will assume equal charge and discharge efficiency of **$\eta = 0.95$**
 
 
 ## Repository structure
 ```
-├── data/                     # Input data (load, solar, pricing)
-├── results/
-├── results_1_week/               # Generated result tables and plots (.csv)
-├── plots/                    # All output plots (.png)
-│   ├── soc.png
+├── README.md
+├── data
+│   ├── data_job_test.pdf
+│   ├── load_data.csv
+│   ├── market_data.csv
+│   └── solar_data.csv
+├── environment.yml
+├── results
+│   ├── charge_discharge.png
 │   ├── import_export.png
-│   ├── net_load.png
+│   ├── load_solar.png
+│   ├── monthly_cost_summary.csv
+│   ├── monthly_returns.csv
+│   ├── monthly_returns.png
 │   ├── monthly_savings.png
-│   └── ...
-├── main.py                   # Model creation and solving
-├── results.py                # Plots and cost comparison logic
-├── validation.py             # Model verification (SOC, power balance)
-├── requirements.txt          # Dependencies
-└── README.md                 # You're here
+│   ├── net_grid_flow.png
+│   ├── net_load.png
+│   ├── processed_load.csv
+│   ├── processed_market.csv
+│   ├── processed_solar.csv
+│   └── soc.png
+├── results_1_week
+├── src
+│   ├── data_loader.py
+│   ├── main.py
+│   ├── model_validation.py
+│   ├── network_setup.py
+│   ├── optimizer.py
+│   └── results.py
+└── validation
+    └── battery_check_plot.png
 ```
 
+## Setup and usage
+
+### Create and Activate Conda Environment
 
 
+```bash
+# Create a new environment from the environment.yml file
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate test_env
+```
+
+### Run the Model
+
+```bash
+python src/main.py
+```
+
+This will:
+- Run the battery optimization model.
+- Generate result plots and data under the `results/` directory.
+- Save monthly cost summaries to CSV.
+- Save validation outputs to `validation/´ directory
 
 ## Data processing steps
 
@@ -49,6 +88,41 @@ The **MILP** is set up using the linopy package
 3. I have demonstrated how to add binary constraints to ensure that the battery does not charge or discharge simultaneously, but have deactivated them as the run time increased significantly.
 4. Objective function which includes grid import costs, grid export revenues and peak monthly power values is added.
 5. Model is solved by HIGHs solver and results extracted
+
+
+### Constraints
+
+#### 1. Power Balance
+
+$$
+\text{import}_t - \text{export}_t + \text{discharge}_t - \text{charge}_t =
+\text{load}_t - \text{solar}_t
+$$
+
+#### 2. State of Charge (SOC)
+
+$$
+\text{SOC}_{t+1} = \text{SOC}_t + \eta \cdot \text{charge}_t -
+\frac{\text{discharge}_t}{\eta}
+$$
+
+Where  $\eta$ is the battery efficiency.
+
+#### 3. Export Limit
+
+The system may only export to the grid when there is excess solar or energy in the battery.
+
+---
+
+
+### Objective Function
+
+The total cost is:
+
+$$
+\text{Total Cost} = \sum_t{\text{import price}_t \cdot \text{import}_t} - \sum_t{\text{export price}_t \cdot \text{export}_t} + 12 \cdot \sum_m{\max{\text{weekday import price}_m}} + 3 \cdot \sum_m{\max{\text{weekday import price}_m}}
+$$
+
 
 
 ## Outputs - 1 week model
