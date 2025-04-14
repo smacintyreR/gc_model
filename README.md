@@ -162,9 +162,10 @@ However, as mentioned previously, the model allows simultaneous charge and disch
 ![Monthly Savings](results/monthly_savings.png)
 
 
-## 📄 Summary CSVs
+## Summary CSVs
 
-- [Monthly Cost Summary](results/monthly_cost_summary.csv)
-- [Monthly Cost Breakdown](results/monthly_cost_breakdown.csv)
+- [Monthly Revenues Summary](results/monthly_returns.csv)
+- [Monthly Cost Breakdown](results/monthly_cost_summary.csv)
+- [Battery State of Charge](results/monthly_cost_summary.csv)
 
 > To view these CSVs, open them in Excel or use pandas in Python.
