@@ -18,6 +18,7 @@
 ├── environment.yml
 ├── results
 │   ├── charge_discharge.png
+│   ├── battery_operation_timeseries.csv
 │   ├── import_export.png
 │   ├── load_solar.png
 │   ├── monthly_cost_summary.csv
@@ -110,7 +111,10 @@ Where  $\eta$ is the battery efficiency.
 
 #### 3. Export Limit
 
-The system may only export to the grid when there is excess solar or energy in the battery.
+$$
+\text{export}_t - \text{discharge}_t  \leq
+\text{solar}_t
+$$
 
 ---
 
@@ -166,6 +170,32 @@ However, as mentioned previously, the model allows simultaneous charge and disch
 
 - [Monthly Revenues Summary](results/monthly_returns.csv)
 - [Monthly Cost Breakdown](results/monthly_cost_summary.csv)
-- [Battery State of Charge](results/monthly_cost_summary.csv)
+- [Battery State of Charge and Charge/Discharge](results/battery_operation_timeseries.csv)
 
-> To view these CSVs, open them in Excel or use pandas in Python.
+## Conclusions
+
+- Adding the battery and solar panel generates **significant cost savings** and generates **extra revenue**:
+    - Average of 3400 AUD/month and a total of 40796 AUD in total over the year.
+    - Average monthly net revenues of 1624 AUD/month and a total of 19483 AUD/year
+ 
+
+## Model verification
+
+To verify the model outputs, various checks were performed to ensure the it is behaving as expected:
+1. Check battery capacity is not exceeded or negative
+2. Check battery does not discharge when empty
+3. Check simultaneous charge and discharge (not respected in simplified case)
+4. Plot first two days of operation to check for anomalies
+
+## Model limitations and improvements
+
+Possible limitations to the model and improvements that could be considered:
+- Add in the binary constraints to restrict simultaneoous charge and discharge
+- Add a grid import limit
+- Consider discounting and battery operational and capital cost in financial calculations
+- No battery degradation considered
+- No ramping, delay or state of charge degradation considered
+- No minimum state of charge required
+- Model assumes perfect foresight and captures no real world uncertainty
+
+
