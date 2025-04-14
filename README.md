@@ -90,7 +90,7 @@ The **MILP** is set up using the linopy package
 5. Model is solved by HIGHs solver and results extracted
 
 
-### Constraints
+### Key constraints
 
 #### 1. Power Balance
 
@@ -129,22 +129,6 @@ $$
 
 To see more clearly the optimised behaviour, we can show the results from a 1 week run of the model, before presenting the full results.
 
-
-
-
-
-### 📊 Monthly Cost Breakdown
-
-Here’s an example of the monthly cost breakdown from the optimization results:
-
-![Monthly Cost Breakdown](results/monthly_cost_breakdown.png)
-
-### 💰 Monthly Cost Savings
-
-![Monthly Savings](results/monthly_savings.png)
-
-## 📈 Other Visualizations
-
 - **Battery State of Charge Over Time**
 
   ![SoC](results_1_week/soc.png)
@@ -156,6 +140,27 @@ Here’s an example of the monthly cost breakdown from the optimization results:
 - **Battery Charge/Discharge Behavior**
 
   ![Charge/Discharge](results_1_week/charge_discharge.png)
+
+
+From this small sample, we can verify that the model is behaving sensibly, displaying:
+- Cyclic state-of-charge of the battery
+- Charge/discharge behaviour linked to state-of-charge
+- Charging greater when net load is lower
+
+However, as mentioned previously, the model allows simultaneous charge and discharge which is unrealistic.
+
+## Outputs - 1 year horizon
+
+
+### Monthly Revenue Breakdown
+
+
+![Monthly Cost Breakdown](results/monthly_returns.png)
+
+### Monthly Cost Savings
+
+![Monthly Savings](results/monthly_savings.png)
+
 
 ## 📄 Summary CSVs
 
