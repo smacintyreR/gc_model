@@ -161,7 +161,7 @@ However, as mentioned previously, the model allows simultaneous charge and disch
 
 ![Monthly Cost Breakdown](results/monthly_returns.png)
 
-### Monthly Cost Savings
+### Monthly Cost Savings (vs base scenario)
 
 ![Monthly Savings](results/monthly_savings.png)
 
