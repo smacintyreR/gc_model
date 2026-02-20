@@ -1,4 +1,4 @@
-# Gridcog - Optimisation test - April 2025 - Sam MacIntyre
+# Battery optimisation problem - Sam MacIntyre
 
 ## Problem context
 
