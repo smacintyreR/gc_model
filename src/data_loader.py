@@ -13,7 +13,7 @@ def load_data(load_path, solar_path, market_path):
     market["ExportWholesalePrice"] /= 1000
 
     # Define 2024 30m index without feb 29
-    full_index = pd.date_range(start="2024-01-01 00:00:00", end="2024-12-31 23:30:00", freq="30T")
+    full_index = pd.date_range(start="2024-01-01 00:00:00", end="2024-12-31 23:30:00", freq="30min")
 
     # Remove all timestamps where the date is February 29
     clean_index = full_index[~((full_index.month == 2) & (full_index.day == 29))]
